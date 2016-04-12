@@ -1,0 +1,199 @@
+<Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.blizzard.com/wow/ui/">
+
+  <Script file="Modules.lua" />
+  <Script file="Main.lua" />
+  <Texture name="ReportedButtonInset" virtual="true">
+    <Anchors>
+      <Anchor point="TOPLEFT" x="1" y="-1" />
+      <Anchor point="BOTTOMRIGHT" x="-1" y="1" />
+    </Anchors>
+  </Texture>
+
+  <CheckButton name="ReportedCheckButton" virtual="true" parentArray="config">
+    <Size x="72" y="25" />
+    <Scripts>
+      <OnClick>
+        self:Update(self:GetChecked())
+      </OnClick>
+    </Scripts>
+    <Anchors>
+      <Anchor point="TOPLEFT" />
+    </Anchors>
+    <NormalTexture setAllPoints="true">
+      <Color r="1" g="1" b="1" a="1" />
+    </NormalTexture>
+    <PushedTexture inherits="ReportedButtonInset">
+      <Color r=".3" g=".3" b=".3" a="1" />
+    </PushedTexture>
+    <HighlightTexture inherits="ReportedButtonInset">
+      <Color r="1" g="1" b="1" a=".2" />
+    </HighlightTexture>
+    <CheckedTexture inherits="ReportedButtonInset">
+      <Color r="0" g="1" b="0" a="1" />
+    </CheckedTexture>
+    <Layers>
+      <Layer level="ARTWORK">
+        <Texture inherits="ReportedButtonInset">
+          <Color r="0" g=".3" b=".6" a="1" />
+        </Texture>
+      </Layer>
+      <Layer level="OVERLAY">
+
+        <FontString inherits="GameFontNormal" parentKey="label" text="CHAT_TYPE">
+          <Color r="1" g="1" b="1" a="1" />
+          <Anchors>
+            <Anchor point="CENTER" />
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+  </CheckButton>
+
+  <CheckButton name="ReportedChannelCheckButton" inherits="ReportedCheckButton" virtual="true" parentArray="config">
+
+    <Size x="21" y="25" />
+    <Scripts>
+      <OnClick>
+        self:Update(self:GetChecked())
+      </OnClick>
+    </Scripts>
+    <NormalTexture>
+      <Size x="21" y="25" />
+      <Anchors>
+        <Anchor point="CENTER" />
+      </Anchors>
+      <Color r="0.1" g="0" b="0.1" a="1" />
+    </NormalTexture>
+    <PushedTexture>
+      <Size x="19" y="23" />
+      <Anchors>
+        <Anchor point="CENTER" />
+      </Anchors>
+      <Color r=".3" g=".3" b=".3" a="1" />
+    </PushedTexture>
+    <HighlightTexture file="Interface\Buttons\UI-CheckBox-Highlight" alphaMode="ADD"/>
+    <CheckedTexture x="20" y="23">
+      <Size x="19" y="23" />
+      <Anchors>
+        <Anchor point="CENTER" />
+      </Anchors>
+      <Color r="0" g="1" b="0" a="1" />
+    </CheckedTexture>
+    <DisabledCheckedTexture>
+      <Size x="19" y="23" />
+      <Anchors>
+        <Anchor point="CENTER" />
+      </Anchors>
+      <Color r="0.7" g=".7" b=".7" a="1" />
+
+    </DisabledCheckedTexture>
+  </CheckButton>
+	<Frame name="Reported" parent="UIParent" movable="true" framestrata="LOW">
+		<Size x="200" y="250" />
+		<Anchors>
+			<Anchor point="CENTER" />
+		</Anchors>
+		<Scripts>
+			<OnLoad function="Reported_OnLoad" />
+			<OnEvent function="Reported_OnEvent" />
+		</Scripts>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture setAllPoints="true" parentArray="config">
+					<Color r="0" g="0" b="0" a="0.7" />
+				</Texture>
+			</Layer>
+      <Layer level="BORDER">
+
+        <Texture parentArray="config" parentKey="progressbg" hidden="true">
+          <Anchors>
+            <Anchor point="TOP" relativeTo="ChatFrame1" />
+          </Anchors>
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" />
+            <Anchor point="RIGHT" />
+          </Anchors>
+          <Color r="0" g="0" b="0" a="1" />
+        </Texture>
+      </Layer>
+			<Layer level="ARTWORK">
+        <Texture parentArray="config" parentKey="progress" hidden="true">
+          <Anchors>
+            <Anchor point="TOP" relativeTo="ChatFrame1" />
+          </Anchors>
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" />
+          </Anchors>
+          <Color r="0" g="1" b="0" a="1" />
+        </Texture>
+
+
+
+      </Layer>
+      <Layer level="OVERLAY">
+
+        <FontString inherits="GameFontNormal" parentKey="label" text="Reported" justifyV="MIDDLE">
+          <Anchors>
+            <Anchor point="TOPLEFT" />
+          </Anchors>
+          <Size y="27" />
+        </FontString>
+        <FontString inherits="GameFontHighlight" parentKey="time">
+          <Anchors>
+            <Anchor point="TOP" relativeTo="ChatFrame1" />
+          </Anchors>
+        </FontString>
+			</Layer>
+
+		</Layers>
+    <Frames>
+      <CheckButton parentKey="CloseButton">
+        <Scripts>
+          <OnClick>
+            Reported.fadeOut:Play()
+          </OnClick>
+        </Scripts>
+        <Size x="25" y="25" />
+        <Anchors>
+          <Anchor point="TOPRIGHT" />
+        </Anchors>
+        <NormalTexture setAllPoints="true">
+          <Color r="0.5" g="0.5" b="0.5" a="1" />
+        </NormalTexture>
+        <PushedTexture setAllPoints="true">
+          <Color r="0.7" g="0.5" b="0.5" a="1" />
+        </PushedTexture>
+        <HighlightTexture setAllPoints="true">
+
+          <Color r="1" g="0.25" b="0" a=".25" />
+        </HighlightTexture>
+        <Layers>
+          <Layer level="OVERLAY">
+            <FontString inherits="GameFontHighlight" text="X" justifyH="LEFT" />
+          </Layer>
+        </Layers>
+      </CheckButton>
+    </Frames>
+    <Animations>
+      <AnimationGroup parentKey="fadeIn">
+        <Alpha fromAlpha="0" toAlpha="1" duration="0.25" order="1" />
+        <Scripts>
+          <OnPlay>
+            Reported:Show()
+            PlaySoundFile("Sound/character/PlayerExertions/TaurenFemaleFinal/TaurenFemaleFinalDeathA.ogg")
+          </OnPlay>
+        </Scripts>
+      </AnimationGroup>
+      <AnimationGroup parentKey="fadeOut">
+        <Alpha change="-1" duration="0.25" order="1" />
+        <Scripts>
+          <OnFinished>
+            -- debugging noise, not part of package
+            PlaySoundFile([[Interface\Addons\SharedMedia_MyMedia\sound\wilhelm.ogg]])
+            Reported:Hide()
+          </OnFinished>
+        </Scripts>
+      </AnimationGroup>
+    </Animations>
+	</Frame>
+</Ui>
