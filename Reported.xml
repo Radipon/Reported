@@ -1,101 +1,138 @@
 <Ui xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://www.blizzard.com/wow/ui/">
 
   <Script file="Modules.lua" />
-  <Script file="Main.lua" />
-  <Texture name="ReportedButtonInset" virtual="true">
-    <Anchors>
-      <Anchor point="TOPLEFT" x="1" y="-1" />
-      <Anchor point="BOTTOMRIGHT" x="-1" y="1" />
-    </Anchors>
-  </Texture>
+  <Script file="Reported.lua" />
 
-  <CheckButton name="ReportedCheckButton" virtual="true" parentArray="config">
-    <Size x="72" y="25" />
-    <Scripts>
-      <OnClick>
-        self:Update(self:GetChecked())
-      </OnClick>
-    </Scripts>
-    <Anchors>
-      <Anchor point="TOPLEFT" />
-    </Anchors>
-    <NormalTexture setAllPoints="true">
-      <Color r="1" g="1" b="1" a="1" />
+  <CheckButton name="ReportedCheckButtonTemplate" virtual="true">
+
+    <NormalTexture file="Interface\Glues\CharacterCreate\UI-CharacterCreate-IconGlow" alphaMode="ADD">
+      <Anchors>
+        <Anchor point="TOPLEFT" x="0" y="0" />
+      </Anchors>
+      <Size x="25" y="25" />
+      <Color r=".2" g=".4" b="1" a="1" />
     </NormalTexture>
-    <PushedTexture inherits="ReportedButtonInset">
-      <Color r=".3" g=".3" b=".3" a="1" />
+    <PushedTexture file="Interface\Glues\CharacterCreate\UI-CharacterCreate-IconGlow" alphaMode="ADD">
+      <Anchors>
+        <Anchor point="TOPLEFT" x="0" y="0" />
+      </Anchors>
+      <Size x="25" y="25" />
+      <Color r=".4" g=".55" b="1" a="1" />
     </PushedTexture>
-    <HighlightTexture inherits="ReportedButtonInset">
-      <Color r="1" g="1" b="1" a=".2" />
-    </HighlightTexture>
-    <CheckedTexture inherits="ReportedButtonInset">
-      <Color r="0" g="1" b="0" a="1" />
+    <CheckedTexture file="Interface\Buttons\UI-CheckBox-Check" alphaMode="ADD" desaturated="true">
+      <Anchors>
+        <Anchor point="TOPLEFT" x="0" y="0" />
+      </Anchors>
+      <Size x="25" y="25" />
+      <Color r="1" g="1" b="1" a="1" />
+    </CheckedTexture>
+  </CheckButton>
+
+  <CheckButton name="ReportedCheckButtonLeft" virtual="true" inherits="ReportedCheckButtonTemplate">
+    <Size x="96" y="25" />
+    <Layers>
+      <Layer level="HIGHLIGHT">
+        <Texture setAllPoints="true">
+          <Color r="1" g="1" b="1" a="0.125" />
+        </Texture>
+      </Layer>
+    </Layers>
+  </CheckButton>
+
+  <CheckButton name="ReportedCheckButton" virtual="true" parentArray="config" >
+    <Size x="96" y="25" />
+    <NormalTexture file="Interface\Glues\CharacterCreate\UI-CharacterCreate-IconGlow" alphaMode="ADD">
+      <Anchors>
+        <Anchor point="TOPRIGHT" x="0" y="0" />
+      </Anchors>
+      <Size x="25" y="25" />
+      <Color r=".2" g=".4" b="1" a="1" />
+    </NormalTexture>
+    <PushedTexture file="Interface\Glues\CharacterCreate\UI-CharacterCreate-IconGlow" alphaMode="ADD">
+      <Anchors>
+        <Anchor point="TOPRIGHT" x="0" y="0" />
+      </Anchors>
+      <Size x="25" y="25" />
+      <Color r=".4" g=".55" b="1" a="1" />
+    </PushedTexture>
+    <CheckedTexture file="Interface\Buttons\UI-CheckBox-Check" desaturated="true" alphaMode="ADD">
+      <Anchors>
+        <Anchor point="TOPRIGHT" x="0" y="0" />
+      </Anchors>
+      <Size x="25" y="25" />
+      <Color r="1" g="1" b="1" a="1" />
     </CheckedTexture>
     <Layers>
+      <Layer level="BACKGROUND">
+        <Texture setAllPoints="true">
+          <Color r="1" g="1" b="1" a="1" />
+          <Gradient orientation="HORIZONTAL">
+            <MinColor r="0" g="0" b="0" a="0.25" />
+            <MaxColor r="0" g="0" b="0" a="0.55" />
+          </Gradient>
+        </Texture>
+      </Layer>
       <Layer level="ARTWORK">
-        <Texture inherits="ReportedButtonInset">
+        <Texture parentKey="bg">
+          <Size x="17" y="17" />
           <Color r="0" g=".3" b=".6" a="1" />
+          <Anchors>
+            <Anchor point="TOPRIGHT" x="-4" y="-4" />
+          </Anchors>
         </Texture>
       </Layer>
       <Layer level="OVERLAY">
 
-        <FontString inherits="GameFontNormal" parentKey="label" text="CHAT_TYPE">
+        <FontString name="$parentLabel" inherits="GameFontNormal" parentKey="label" text="CHAT_TYPE">
           <Color r="1" g="1" b="1" a="1" />
           <Anchors>
-            <Anchor point="CENTER" />
+            <Anchor point="RIGHT" x="-28" y="0" />
           </Anchors>
         </FontString>
+      </Layer>
+      <Layer level="HIGHLIGHT">
+
+        <Texture setAllPoints="true">
+          <Color r="1" g="1" b="1" a="1" />
+          <Gradient orientation="HORIZONTAL">
+            <MinColor r="1" g="1" b="1" a="0.25" />
+            <MaxColor r="1" g="1" b="1" a="0" />
+          </Gradient>
+        </Texture>
       </Layer>
     </Layers>
   </CheckButton>
 
   <CheckButton name="ReportedChannelCheckButton" inherits="ReportedCheckButton" virtual="true" parentArray="config">
-
-    <Size x="21" y="25" />
-    <Scripts>
-      <OnClick>
-        self:Update(self:GetChecked())
-      </OnClick>
-    </Scripts>
-    <NormalTexture>
-      <Size x="21" y="25" />
-      <Anchors>
-        <Anchor point="CENTER" />
-      </Anchors>
-      <Color r="0.1" g="0" b="0.1" a="1" />
-    </NormalTexture>
-    <PushedTexture>
-      <Size x="19" y="23" />
-      <Anchors>
-        <Anchor point="CENTER" />
-      </Anchors>
-      <Color r=".3" g=".3" b=".3" a="1" />
-    </PushedTexture>
-    <HighlightTexture file="Interface\Buttons\UI-CheckBox-Highlight" alphaMode="ADD"/>
-    <CheckedTexture x="20" y="23">
-      <Size x="19" y="23" />
-      <Anchors>
-        <Anchor point="CENTER" />
-      </Anchors>
-      <Color r="0" g="1" b="0" a="1" />
+    <Size x="25" y="25" />
+    <CheckedTexture file="Interface\Glues\CharacterCreate\UI-CharacterCreate-IconGlow" alphaMode="ADD">
+      <Color r="1" g="1" b="1" a="1" />
     </CheckedTexture>
-    <DisabledCheckedTexture>
-      <Size x="19" y="23" />
-      <Anchors>
-        <Anchor point="CENTER" />
-      </Anchors>
-      <Color r="0.7" g=".7" b=".7" a="1" />
-
+    <DisabledTexture file="Interface\Glues\CharacterCreate\UI-CharacterCreate-IconGlow" alphaMode="ADD">
+      <Color r="0.3" g="0.3" b="0.3" a=".35" />
+    </DisabledTexture>
+    <DisabledCheckedTexture file="Interface\Glues\CharacterCreate\UI-CharacterCreate-IconGlow" alphaMode="ADD">
+      <Color r="0.3" g="0.3" b="0.3" a=".15" />
     </DisabledCheckedTexture>
   </CheckButton>
-	<Frame name="Reported" parent="UIParent" movable="true" framestrata="LOW">
-		<Size x="200" y="250" />
+
+	<Frame name="ReportedFrame" parent="UIParent" movable="true" enableMouse="true" frameStrata="LOW" hidden="true">
+		<Size x="500" y="272" />
 		<Anchors>
 			<Anchor point="CENTER" />
 		</Anchors>
 		<Scripts>
-			<OnLoad function="Reported_OnLoad" />
-			<OnEvent function="Reported_OnEvent" />
+			<OnLoad function="ReportedGSH_OnLoad" />
+      <OnShow function="ReportedGSH_OnShow" />
+      <OnHide function="ReportedGSH_OnHide" />
+      <OnMouseWheel function="ReportedGSH_OnScroll" />
+			<OnEvent function="ReportedGSH_OnEvent" />
+      <OnDragStart>
+        self:StartMoving()
+      </OnDragStart>
+      <OnDragStop>
+        self:StopMovingOrSizing()
+      </OnDragStop>
 		</Scripts>
 		<Layers>
 			<Layer level="BACKGROUND">
@@ -107,19 +144,18 @@
 
         <Texture parentArray="config" parentKey="progressbg" hidden="true">
           <Anchors>
-            <Anchor point="TOP" relativeTo="ChatFrame1" />
+            <Anchor point="TOPLEFT" relativeTo="ChatFrame1" x="0" y="0" />
+            <Anchor point="TOPRIGHT" relativeTo="ChatFrame1" x="0" y="-2" />
           </Anchors>
-          <Anchors>
-            <Anchor point="BOTTOMLEFT" />
-            <Anchor point="RIGHT" />
-          </Anchors>
+
           <Color r="0" g="0" b="0" a="1" />
         </Texture>
       </Layer>
 			<Layer level="ARTWORK">
         <Texture parentArray="config" parentKey="progress" hidden="true">
           <Anchors>
-            <Anchor point="TOP" relativeTo="ChatFrame1" />
+            <Anchor point="TOPLEFT" relativeTo="ChatFrame1" />
+            <Anchor point="TOP" relativeTo="ChatFrame1" x="0" y="-2" />
           </Anchors>
           <Anchors>
             <Anchor point="BOTTOMLEFT" />
@@ -127,59 +163,323 @@
           <Color r="0" g="1" b="0" a="1" />
         </Texture>
 
+          <Texture name="$parentJournal" parentKey="entryList">
+            <Anchors>
+              <Anchor point="TOPLEFT" x="0" y="-24" />
+              <Anchor point="BOTTOMRIGHT" x="0" y="0" relativeKey="$parent" />
+            </Anchors>
+            <Color r="0" g="0" b="0" a="1" />
+          </Texture>
 
+          <Texture name="$parentMiscellaneous" parentKey="miscellaneous">
+            <Size y="100" />
+            <Anchors>
+              <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" />
+              <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" />
+            </Anchors>
+            <Color r="0" g="0" b="0" a="0.7" />
+          </Texture>
+
+        <Texture name="$parentJournalScrollPosition" relativeKey="JournalThumb">
+          <Size x="3" />
+          <Anchors>
+            <Anchor point="RIGHT" />
+          </Anchors>
+          <Color r="1" g="1" b="1" a="1" />
+        </Texture>
 
       </Layer>
       <Layer level="OVERLAY">
 
-        <FontString inherits="GameFontNormal" parentKey="label" text="Reported" justifyV="MIDDLE">
+        <FontString inherits="GameFontNormalHuge" parentKey="header" text="Reported">
           <Anchors>
-            <Anchor point="TOPLEFT" />
+            <Anchor point="BOTTOMLEFT" relativePoint="TOPLEFT" />
           </Anchors>
-          <Size y="27" />
+          <Color r="0" g="0.7" b="1" a="1" />
         </FontString>
+
+        <FontString inherits="GameFontNormalHuge" parentKey="label" text="" justifyH="RIGHT" justifyV="BOTTOM">
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" relativePoint="TOPLEFT" x="-96" y="2" />
+          </Anchors>
+          <Size y="27" x="92" />
+        </FontString>
+
+        <FontString parentKey="playerFlag" inherits="GameFontNormal" text="PLAYER_FLAG" hidden="true" justifyV="BOTTOM">
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" relativePoint="BOTTOMRIGHT" relativeKey="$parent.label" x="0" y="1" />
+          </Anchors>
+          <Color r="0" g="0.7" b="1" a="1" />
+        </FontString>
+
         <FontString inherits="GameFontHighlight" parentKey="time">
           <Anchors>
             <Anchor point="TOP" relativeTo="ChatFrame1" />
           </Anchors>
         </FontString>
-			</Layer>
 
+        <FontString inherits="GameFontNormalLarge" parentKey="entryListHeader" text="Modules" justifyV="BOTTOM">
+          <Anchors>
+            <Anchor point="TOPLEFT" relativeKey="$parent.entryList" />
+          </Anchors>
+          <Size y="27" />
+        </FontString>
+        <FontString parentKey="stats" inherits="GameFontNormal" text="STATS_TEXT" justifyV="BOTTOM">
+          <Anchors>
+            <Anchor point="BOTTOM" relativeKey="$parent.entryListHeader" />
+            <Anchor point="RIGHT"  relativeKey="$parent.entryList" />
+          </Anchors>
+          <Color r="1" g="1" b="1" a="1" />
+        </FontString>
+        <FontString inherits="GameFontNormalLargeOutline" parentKey="testMessage" hidden="true">
+          <Anchors>
+            <Anchor point="BOTTOM" relativePoint="TOP" />
+          </Anchors>
+        </FontString>
+			</Layer>
 		</Layers>
     <Frames>
-      <CheckButton parentKey="CloseButton">
-        <Scripts>
-          <OnClick>
-            Reported.fadeOut:Play()
-          </OnClick>
-        </Scripts>
+      <Button parentKey="CloseButton">
         <Size x="25" y="25" />
         <Anchors>
-          <Anchor point="TOPRIGHT" />
+          <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" x="-2" y="2" />
         </Anchors>
         <NormalTexture setAllPoints="true">
-          <Color r="0.5" g="0.5" b="0.5" a="1" />
+          <Color r="1" g="0.05" b="0" a="0" />
         </NormalTexture>
-        <PushedTexture setAllPoints="true">
-          <Color r="0.7" g="0.5" b="0.5" a="1" />
+        <PushedTexture setAllPoints="true" alphaMode="ADD">
+          <Color r="1" g="0.05" b="0" a="0.25" />
         </PushedTexture>
-        <HighlightTexture setAllPoints="true">
-
-          <Color r="1" g="0.25" b="0" a=".25" />
+        <HighlightTexture setAllPoints="true" alphaMode="ADD">
+          <Color r="1" g="0.05" b="0" a="1" />
         </HighlightTexture>
         <Layers>
           <Layer level="OVERLAY">
-            <FontString inherits="GameFontHighlight" text="X" justifyH="LEFT" />
+            <FontString inherits="GameFontHighlight" text="X" justifyH="CENTER" />
+          </Layer>
+        </Layers>
+      </Button>
+
+      <Button parentKey="TestButton">
+        <Size x="50" y="25" />
+        <Anchors>
+          <Anchor point="BOTTOMRIGHT" relativePoint="TOPRIGHT" x="-29" y="2" />
+        </Anchors>
+        <NormalTexture setAllPoints="true">
+          <Color r="1" g="0.05" b="0" a="0" />
+        </NormalTexture>
+        <PushedTexture setAllPoints="true" alphaMode="ADD">
+          <Color r="1" g="0.05" b="0" a="0.25" />
+        </PushedTexture>
+        <HighlightTexture setAllPoints="true" alphaMode="ADD">
+          <Color r=".2" g="0.2" b=".2" a="1" />
+        </HighlightTexture>
+        <Layers>
+          <Layer level="OVERLAY">
+            <FontString inherits="GameFontHighlight" text="Test" justifyH="CENTER" />
+          </Layer>
+        </Layers>
+      </Button>
+
+
+
+      <Slider name="$parentMinDelay" parentKey="DelayMin" minValue="0" maxValue="60" valueStep=".1" pageStep=".1" orientation="HORIZONTAL">
+        <Size x="148" y="16" />
+        <Anchors>
+          <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" x="0" y="-16" />
+        </Anchors>
+        <ThumbTexture>
+          <Size x="20" y="12" />
+          <Color r="1" g=".4" b=".4" a=".8" />
+        </ThumbTexture>
+        <Layers>
+          <Layer level="ARTWORK">
+            <Texture setAllPoints="true">
+              <Color r="0.2" g=".17" b="0.17" a=".7" />
+            </Texture>
+          </Layer>
+          <Layer level="OVERLAY">
+            <FontString parentKey="label" inherits="GameFontHighlight">
+              <Anchors>
+                <Anchor point="RIGHT" relativePoint="LEFT" x="-3" y="0" />
+              </Anchors>
+            </FontString>
+            <FontString inherits="GameFontHighlight" text="Minimum Response Delay">
+              <Anchors>
+                <Anchor point="BOTTOM" relativePoint="TOP" x="0" y="2" />
+              </Anchors>
+              <Color r="1" g=".5" b=".5" a="1" />
+            </FontString>
+          </Layer>
+        </Layers>
+      </Slider>
+      <Slider name="$parentMaxDelay" parentKey="DelayMax" minValue="0" maxValue="60" valueStep="1" pageStep=".1" orientation="HORIZONTAL">
+        <Size x="148" y="16" />
+        <Anchors>
+          <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeKey="$parent.DelayMin" x="0" y="-16" />
+        </Anchors>
+        <ThumbTexture>
+          <Size x="20" y="12" />
+          <Color r=".4" g="1" b=".4" a=".8" />
+        </ThumbTexture>
+        <Layers>
+          <Layer level="ARTWORK">
+            <Texture setAllPoints="true">
+              <Color r="0.17" g=".2" b="0.17" a=".7" />
+            </Texture>
+          </Layer>
+          <Layer level="OVERLAY">
+            <FontString parentKey="label" inherits="GameFontHighlight">
+              <Anchors>
+                <Anchor point="RIGHT" relativePoint="LEFT" x="-3" y="0" />
+              </Anchors>
+            </FontString>
+            <FontString inherits="GameFontHighlight" text="Max Response Delay">
+              <Anchors>
+                <Anchor point="BOTTOM" relativePoint="TOP" x="0" y="2" />
+              </Anchors>
+              <Color r=".5" g="1" b=".5" a="1" />
+            </FontString>
+          </Layer>
+        </Layers>
+      </Slider>
+      <Slider name="$parentThrottle" parentKey="Throttle" minValue="1" maxValue="40" valueStep="1" pageStep="3" orientation="HORIZONTAL">
+        <Size x="148" y="16" />
+        <Anchors>
+          <Anchor point="TOPRIGHT" relativePoint="BOTTOMRIGHT" relativeKey="$parent.DelayMax" x="0" y="-16" />
+        </Anchors>
+        <ThumbTexture>
+          <Size x="20" y="12" />
+          <Color r=".4" g=".4" b=".4" a=".8" />
+        </ThumbTexture>
+        <Layers>
+          <Layer level="ARTWORK">
+            <Texture setAllPoints="true">
+              <Color r="0.17" g=".17" b="0.17" a=".7" />
+            </Texture>
+          </Layer>
+          <Layer level="OVERLAY">
+            <FontString parentKey="label" inherits="GameFontHighlight">
+              <Anchors>
+                <Anchor point="RIGHT" relativePoint="LEFT" x="-3" y="0" />
+              </Anchors>
+            </FontString>
+            <FontString inherits="GameFontHighlight" text="Time Between Messages">
+              <Anchors>
+                <Anchor point="BOTTOM" relativePoint="TOP" x="0" y="2" />
+              </Anchors>
+              <Color r=".7" g=".7" b=".7" a="1" />
+            </FontString>
+          </Layer>
+        </Layers>
+      </Slider>
+
+
+      <CheckButton parentKey="NoAFK" inherits="ReportedCheckButtonLeft">
+        <Anchors>
+          <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" x="0" y="0" />
+        </Anchors>
+        <Size x="120" y="24" />
+        <Layers>
+          <Layer level="OVERLAY">
+            <FontString inherits="GameFontHighlight" text="Disable while AFK">
+              <Anchors>
+                <Anchor point="LEFT" x="27" y="0" />
+              </Anchors>
+            </FontString>
           </Layer>
         </Layers>
       </CheckButton>
+      <CheckButton parentKey="EnableState" inherits="ReportedCheckButtonLeft">
+        <Anchors>
+          <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" x="0" y="-24" />
+        </Anchors>
+        <Size x="120" y="24" />
+        <Layers>
+          <Layer level="OVERLAY">
+            <FontString inherits="GameFontHighlight" text="Enable AddOn">
+              <Anchors>
+                <Anchor point="LEFT" x="27" y="0" />
+              </Anchors>
+            </FontString>
+          </Layer>
+        </Layers>
+      </CheckButton>
+
+      <EditBox name="$parentReportSuffix" parentKey="ReportSuffix" multiLine="false" autoFocus="false" hidden="true">
+        <TextInsets>
+          <AbsInset left="4" right="4" top="2" bottom="2" />
+        </TextInsets>
+        <Scripts>
+          <OnEscapePressed>
+            self:ClearFocus()
+          </OnEscapePressed>
+        </Scripts>
+        <Anchors>
+          <Anchor point="TOPLEFT" relativePoint="TOPRIGHT" relativeKey="$parent.entryList" x="2" y="0" />
+        </Anchors>
+        <Size x="200" y="24" />
+        <FontString inherits="GameFontNormal">
+          <Color r="1" g="1" b="1" a="1" />
+        </FontString>
+        <Layers>
+          <Layer level="BACKGROUND">
+            <Texture setAllPoints="true">
+              <Color r="0" g="0" b="0" a="1" />
+            </Texture>
+          </Layer>
+        </Layers>
+      </EditBox>
+
+      <ScrollFrame name="$parentDictionaryEditor" parentKey="DictionaryScroll" enableMouseWheel="true" hidden="true">
+
+        <Size x="200" y="322" />
+        <Anchors>
+          <Anchor point="TOPLEFT" relativePoint="BOTTOMLEFT" relativeKey="$parent.ReportSuffix" x="0" y="-2" />
+        </Anchors>
+        <Scripts>
+          <OnMouseWheel>
+            local _, f = self.Dictionary:GetFont()
+            local f = f + self.Dictionary:GetSpacing() + self.Dictionary:GetSpacing()
+            local s = self:GetVerticalScroll() - delta * f
+
+            local p = self:GetVerticalScrollRange()
+            if s &gt; p then s = p elseif s &lt; 0 then s = 0 end
+            self:SetVerticalScroll(s)
+          </OnMouseWheel>
+        </Scripts>
+        <ScrollChild>
+          <EditBox name="$parentDictionary" parentKey="Dictionary" multiLine="true" autoFocus="false">
+            <TextInsets>
+              <AbsInset left="4" right="4" top="2" bottom="2" />
+            </TextInsets>
+            <Size x="200" />
+            <Scripts>
+              <OnEscapePressed>
+                self:ClearFocus()
+              </OnEscapePressed>
+            </Scripts>
+            <FontString inherits="GameFontNormal" justifyV="TOP" justifyH="LEFT">
+              <Color r="1" g="1" b="1" a="1" />
+            </FontString>
+          </EditBox>
+        </ScrollChild>
+        <Layers>
+          <Layer level="BACKGROUND">
+            <Texture setAllPoints="true">
+              <Color r="0" g="0" b="0" a="1" />
+            </Texture>
+          </Layer>
+        </Layers>
+      </ScrollFrame>
+
     </Frames>
     <Animations>
       <AnimationGroup parentKey="fadeIn">
         <Alpha fromAlpha="0" toAlpha="1" duration="0.25" order="1" />
         <Scripts>
           <OnPlay>
-            Reported:Show()
+            ReportedFrame:Show()
             PlaySoundFile("Sound/character/PlayerExertions/TaurenFemaleFinal/TaurenFemaleFinalDeathA.ogg")
           </OnPlay>
         </Scripts>
@@ -188,12 +488,82 @@
         <Alpha change="-1" duration="0.25" order="1" />
         <Scripts>
           <OnFinished>
-            -- debugging noise, not part of package
+            --@debug@
             PlaySoundFile([[Interface\Addons\SharedMedia_MyMedia\sound\wilhelm.ogg]])
-            Reported:Hide()
+            --@end-debug@
+            ReportedFrame:Hide()
           </OnFinished>
         </Scripts>
       </AnimationGroup>
     </Animations>
 	</Frame>
+
+
+  <Frame name="ReportedJournalTemplate" virtual="true">
+    <Anchors>
+      <Anchor point="LEFT" />
+      <Anchor point="RIGHT" />
+    </Anchors>
+    <Layers>
+      <Layer level="BACKGROUND">
+        <Texture setAllPoints="true" parentKey="bg">
+          <Color r="1" g="1" b="1" a="1" />
+        </Texture>
+
+      </Layer>
+      <Layer level="BORDER">
+        <Texture alphaMode="BLEND">
+          <Size y="4" />
+          <Anchors>
+            <Anchor point="TOPLEFT" />
+            <Anchor point="TOPRIGHT" />
+          </Anchors>
+          <Color r="1" g="1" b="1" a="1" />
+          <Gradient orientation="VERTICAL">
+            <MinColor r=".1" g=".1" b=".1" a="0" />
+            <MaxColor r="0" g="0" b="0" a=".25" />
+          </Gradient>
+        </Texture>
+
+        <Texture alphaMode="ADD">
+          <Size y="3" />
+          <Anchors>
+            <Anchor point="BOTTOMLEFT" />
+            <Anchor point="BOTTOMRIGHT" />
+          </Anchors>
+          <Color r="1" g="1" b="1" a="1" />
+          <Gradient orientation="VERTICAL">
+            <MinColor r=".1" g=".1" b=".1" a=".1" />
+            <MaxColor r=".2" g=".2" b=".2" a="0" />
+          </Gradient>
+        </Texture>
+      </Layer>
+    </Layers>
+  </Frame>
+
+  <Button name="ReportedModuleEntry" inherits="ReportedJournalTemplate" virtual="true">
+    <HighlightTexture setAllPoints="true" alphaMode="ADD">
+      <Color r=".2" g=".8" b="1" a="0.25" />
+    </HighlightTexture>
+    <Layers>
+      <Layer level="OVERLAY">
+        <FontString name="$parentText" parentKey="text" inherits="NumberFontNormal" text="MODULE_TEXT" justifyH="LEFT" wordwrap="false">
+          <Anchors>
+            <Anchor point="TOPLEFT" relativePoint="TOPLEFT" x="3" y="-3" />
+            <Anchor point="BOTTOMRIGHT" x="-3" y="3" />
+          </Anchors>
+        </FontString>
+      </Layer>
+    </Layers>
+  </Button>
+
+  <EditBox name="ReportedDictionaryField" inherits="ReportedJournalTemplate" virtual="true">
+    <Size y="26" />
+    <FontString inherits="NumberFontNormal" parentKey="editorFont" justifyH="LEFT" wordwrap="false" />
+    <Layers>
+      <Layer level="BACKGROUND">
+        <Texture setAllPoints="true"></Texture>
+      </Layer>
+    </Layers>
+  </EditBox>
 </Ui>

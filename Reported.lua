@@ -1,552 +1,733 @@
--- Saved variables table
-Reported_Global_Vars = {}; -- It will generate from the default table below
-local Reported_Global_Vars_Default = { -- Global Var Default table which is compared to the saved variable global table, and removes/adds values if needed
-	["namefilter"] = 'On',
-	["Counter"] = 0,
-	["maxRecent"] = 10,
-	["Toggle"] = 'On',
-	["rRespond"] = 'On',
-	["AFKCancel"] = 'Off',
-	["Range"] = {
-		["Lower"] = 0,
-		["Upper"] = 0,
-	},
-	["Channels"] = {
-	 	["rSay"] = 'On',
-	 	["rYell"] = 'On',
-	 	["rInstance_CHAT"] = 'On',
-	 	["rNumbered"] = 'On',
-	 	["rRaid"] = 'Off',
-	 	["rParty"] = 'Off',
-	 	["rBattleground"] = 'On',
-	 	["rGuild"] = 'Off',
-	 	["rOfficer"] = 'Off',
- 	},
- 	["Numbered"] = {
- 		[1] = 'On',
- 		[2] = 'On',
- 		[3] = 'Off',
- 		[4] = 'Off',
- 		[5] = 'Off',
- 		[6] = 'Off',
- 		[7] = 'Off',
- 		[8] = 'Off',
- 		[9] = 'Off',
- 		[10] = 'Off',
- 	}
-};
+--- Reported v2.0 by Goon Squad
+-- Re-written from scratch by Krakyn
+--
+local addon = select(2, ...)
+local  _G = _G
+local Reported = _G.ReportedFrame
 
--- Some global tables
-Reported_Recent = {}; -- Holds recent reports
-Module_Table = {}; -- Holds module index names that are enabled
+local rand, pairs, ipairs, type, unpack, floor, max, select, sort, wipe = math.random, pairs, ipairs, type, unpack, floor, max, select, sort, table.wipe
+local GetTime, PlaySoundFile, tostring, strupper, strlower, rep = GetTime, PlaySoundFile, tostring, strupper, strlower, string.rep
+local CreateFrame, SendChatMessage, UnitIsAFK, UnitName, UnitGUID = CreateFrame, SendChatMessage, UnitIsAFK, UnitName, UnitGUID
+local nextCheckTime, modulesAvailable, fauxScrollEntries, fauxScrollOffset = 0, 0, 0, 0
+local db, channelToggleButton, playerName, myGUID
 
-tempLineTable, enabledModules, getModuleName, getLine = nil;
- 
--- Local variables are cool
-local ReportedLineSuffix = ''; -- Appends a static message to the end of any Reported line generated
-local timer, lastReported, rangeRand, printModuleName, ReportedLine; -- This simply just declares all the variables that will be used throughout the code; they currently have no value set
-local Version = GetAddOnMetadata("Reported", "Version"); -- This is printed in a few messages
-local addonLoaded, elapsedUpdate, overDelay, swearFound, afk = 0, 0, 0, 0, 0; -- These are set to 0 instead of nil because I do arithmetic with them
-local holdReportedInfo = {}; -- Holds Reported info for the ReportedOnUpdate function
+-- debug messages; does nothing when the toolkit isn't present and active
+local print = function(...) if _G.Devian and _G.Devian.InWorkspace() then print('Reported', ...) end end
 
-function Msg(msg) -- Now I don't have to type DEFAULT_CHAT_FRAME:AddMessage() everytime I want to print something
-    if (DEFAULT_CHAT_FRAME) then
-        DEFAULT_CHAT_FRAME:AddMessage(msg); -- Instead of typing 'DEFAULT_CHAT_FRAME:AddMessage();' everytime I want to print something I just have to type Msg(msg);
-    end
+-- chat window output
+local Msg = function(text)
+  if DEFAULT_CHAT_FRAME then DEFAULT_CHAT_FRAME:AddMessage('|cFFFFFF00Reported|r: ' ..text) end
+end
+local versionString = 6024005
+local dictionaryVersion = 72
+-- default config values
+local defaults = {
+  channels = {
+    SAY = false,
+    YELL = true,
+    INSTANCE = true,
+    BATTLEGROUND = true,
+    CHANNEL1 = true,
+    CHANNEL2 = true
+  },
+  modules = {
+    ['Default'] = {false, 0, 0},
+    ['Riko'] = {true, 0, 0},
+  },
+  EnableState = true,
+  DialogState = true,
+  FilterRealmNames = true,
+  DelayMin = 2,
+  DelayMax = 6,
+  Throttle = 24,
+  NoAFK = true,
+  LineSuffix = '',
+  Dictionary =  {
+    "%A+f+%s*a+%s*g+%A", -- [1]
+    "d+%s*a+%s*m+%s*n+", -- [2]
+    "%Af+%s*u+[qck%s]+%A", -- [3]
+    "%As+%s*h+%s*i+%s*t+%A", -- [4]
+    "[%Ar]f+%s*u+[qck%s]+e+%s*r+", -- [5]
+    "%Af+%s*a+%s*g+%s*[oi]+%s*t+", -- [6]
+    "%Ad+%s*a+%s*f+%s*u+[qck%s]+", -- [7]
+    "%An+%s*i+%s*gg+%s*e+%s*[ra]+", -- [8]
+    "%Ac+%s*u+%s*n+%s*t+", -- [9]
+    "%Ab+%s*i+%s*t*%s*c+%s*h+", -- [10]
+    "%Ab+%s*a+%s*s+%s*t+%s*a+%s*r+%s*d+", -- [11]
+    "%Ad+%s*o+%s*u+%s*c+%s*h+%s*e+", -- [12]
+    "a+%s*s+%s*h+%s*o+%s*l+%s*e+", -- [13]
+    "%Aa%s*s%s*s+%A", -- [14]
+    "c+%s*h+%s*i+%s*n+%s*[kqc]+", -- [15]
+    "%Aa+%s*s+%s*e+%s*s+%A", -- [16]
+    "%As+%s*p+%s*i+%s*[ck%s]+", -- [17]
+    "%Ac+%s*o%s*c+%s*[k%s]+%A", -- [18]
+    "%Ad+%s*i+%s*[qck%s]+%A", -- [19]
+    "%Ad+%s*a+%s*n+%s*g+%A", -- [20]
+    "d+%s*a+%s*mm*%s*i+%s*t+", -- [21]
+    "%Ad+%s*a+%s*r+%s*n+%A", -- [22]
+    "ranga", -- [23]
+  }
+}
+local events = {
+  ["CHAT_MSG_SAY"] = 'SAY',
+  ["CHAT_MSG_YELL"] = 'YELL',
+  ['CHAT_MSG_GUILD'] = 'GUILD',
+  ['CHAT_MSG_OFFICER'] = 'OFFICER',
+  ['CHAT_MSG_PARTY'] = 'PARTY',
+  ['CHAT_MSG_RAID'] = 'RAID',
+  ['CHAT_MSG_CHANNEL'] = 'CHANNEL',
+  ['CHAT_MSG_INSTANCE_CHAT'] = 'INSTANCE_CHAT',
+  ['CHAT_MSG_INSTANCE_CHAT_LEADER'] = 'INSTANCE_CHAT',
+  ['CHAT_MSG_BATTLEGROUND'] = 'BATTLEGROUND',
+  ['CHAT_MSG_BATTLEGROUND_LEADER'] = 'BATTLEGROUND',
+  ['CHAT_MSG_WHISPER'] = 'WHISPER',
+  ['CHAT_MSG_RAID_LEADER'] = 'RAID',
+  ['CHAT_MSG_PARTY_LEADER'] = 'PARTY',
+}
+addon.orderedNames = {}
+addon.orderedModules = {}
+addon.dictionary = {}
+addon.enabledModules = {}
+local swears = addon.dictionary
+local orderedNames = addon.orderedNames
+local orderedModules = addon.orderedModules
+local enabledModules = addon.enabledModules
+local moduleText = addon.moduleText
+
+local monitors_order = {
+  'CHANNEL', 'SAY', 'YELL', 'PARTY', 'RAID', 'INSTANCE_CHAT', 'BATTLEGROUND', 'GUILD', 'OFFICER'
+}
+local monitors = {
+  SAY = {
+    enable = true,
+    label = _G.SAY
+  },
+  YELL = {
+    enable = true,
+    label = _G.YELL
+  },
+  INSTANCE_CHAT = {
+    enable = true,
+    label = _G.INSTANCE
+  },
+  CHANNEL = {
+    enable = true,
+    label = _G.CHAT,
+  },
+  RAID = {
+    enable = false,
+    label = _G.RAID
+  },
+  PARTY = {
+    enable = false,
+    label = _G.PARTY
+  },
+  BATTLEGROUND = {
+    enable = true,
+    label = _G.BATTLEGROUND
+  },
+  GUILD = {
+    enable = false,
+    label = _G.GUILD,
+  },
+  OFFICER = {
+    enable = false,
+    label = _G.OFFICER
+  },
+}
+
+local GetReportedLine = function(filteredname)
+  local module = addon.enabledModules[rand(1,#addon.enabledModules)]
+  local line = rand(1, #moduleText[module])
+  local text = moduleText[module][line]
+  text = text:gsub("%%Pl", filteredname);
+  text = text:gsub("%%PL", strupper(filteredname));
+  text = text:gsub("%%pl", strlower(filteredname));
+  db.modules[module] = db.modules[module] or {true, 0, 0 }
+
+  if #db.LineSuffix >= 1 then
+    text = text .. ' ' .. db.LineSuffix
+  end
+
+  return text, module, line, unpack(db.modules[module])
 end
 
-function Reported_FlipState(table, msg)
-	if (table == 'On') then
-		table = 'Off';
-		Msg("|cFFFFFF7F" .. msg .. "|r is now |cFFFFFF7F[|r|cFFFF0000Off|r|cFFFFFF7F]|r");
-	else
-		table = 'On';
-		Msg("|cFFFFFF7F" .. msg .. "|r is now |cFFFFFF7F[|r|cFFFFFF00On|r|cFFFFFF7F]|r");
-	end
-	return table;
-end
-
--- Slash commands table
-local Reported_Commands = {
-	["a"] = function() -- The same as toggle
-		Reported_Global_Vars.Toggle = Reported_FlipState(Reported_Global_Vars.Toggle, "Reported");
-	end,
-	["toggle"] = function() -- This creates a mini function within the table its self. You can even give it args as seen below.  To refer to this particular one you would type Reported_Commands.toggle(); or Reported_Commands[toggle](); or Reported_Commands["toggle"]();
-  		Reported_Global_Vars.Toggle = Reported_FlipState(Reported_Global_Vars.Toggle, "Reported");
-	end,
-	["counter"] = function()
-  		Msg("|cFFFFFF7FReported|r has been triggered |cFFFFFF7F[|r" .. Reported_Global_Vars.Counter .. "|cFFFFFF7F]|r times.");
-	end,
-	["channels"] = function()
-		local Reported_Channels_Temp = {}; -- Creates an empty table
-		for i in pairs(Reported_Global_Vars.Channels) do -- Gets the name of the channel
-			tinsert(Reported_Channels_Temp, i); -- Inserts it into the table we just made
-		end
-		sort(Reported_Channels_Temp, function(a,b) return a<b end); -- Sorts the table we just made with all the channel names alphabetically
-		for _,v in pairs(Reported_Channels_Temp) do -- For every variable in the channel global var table it makes a message
-			if (gsub(strlower(v), "r", "", 1) == "numbered") then -- Turns rNumbered to rnumbered, then removes the first r 
-				local channels = ""; -- Creates a string so it can be added to later on
-				for i,v in ipairs(Reported_Global_Vars.Numbered) do
-					if (v == 'On') then
-						channels = channels .. "," .. i; -- Adds channel number to channels string if it's enabled
-					end
-				end
-				channels = gsub(channels, ",", "", 1); -- Remove the leading comma
-				if (Reported_Global_Vars.Channels[v] == 'On') then
-					Msg(" - |cFFFFFF7F" .. gsub(strlower(v), "r", "", 1) .. " [|r" .. channels .. "|cFFFFFF7F][|r|cFFFFFF00On|r|cFFFFFF7F]|r: Toggles monitoring the " .. gsub(strlower(v), "r", "", 1) .. " channel(s), add a valid channel number to make reported monitor it");
-				else
-					Msg(" - |cFFFFFF7F" .. gsub(strlower(v), "r", "", 1) .. " [|r" .. channels .. "|cFFFFFF7F][|r|cFFFFFF00Off|r|cFFFFFF7F]|r: Toggles monitoring the " .. gsub(strlower(v), "r", "", 1) .. " channel(s), add a valid channel number to make reported monitor it");
-				end
-			elseif (Reported_Global_Vars.Channels[v] == 'On') then
-				Msg(" - |cFFFFFF7F" .. gsub(strlower(v), "r", "", 1) .. " [|r|cFFFFFF00On|r|cFFFFFF7F]|r: Toggles monitoring the " .. gsub(strlower(v), "r", "", 1) .. " channel");
-			else
-				Msg(" - |cFFFFFF7F" .. gsub(strlower(v), "r", "", 1) .. " [|r|cFFFF0000Off|r|cFFFFFF7F]|r: Toggles monitoring the " .. gsub(strlower(v), "r", "", 1) .. " channel");
-			end
-		end
-	end,
-	["channels_say"] = function()
-		Reported_Global_Vars.Channels.rSay = Reported_FlipState(Reported_Global_Vars.Channels.rSay, "Say channel monitoring");
-	end,
-	["channels_instance_CHAT"] = function()
-		Reported_Global_Vars.Channels.rInstance_CHAT = Reported_FlipState(Reported_Global_Vars.Channels.rInstance_CHAT, "Instance_CHAT channel monitoring");
-	end,
-	["channels_yell"] = function()
-  		Reported_Global_Vars.Channels.rYell = Reported_FlipState(Reported_Global_Vars.Channels.rYell, "Yell channel monitoring");
-	end,
-	["channels_guild"] = function()
-  		Reported_Global_Vars.Channels.rGuild = Reported_FlipState(Reported_Global_Vars.Channels.rGuild, "Guild channel monitoring");
-	end,
-	["channels_officer"] = function()
-  		Reported_Global_Vars.Channels.rOfficer = Reported_FlipState(Reported_Global_Vars.Channels.rOfficer, "Officer channel monitoring");
-	end,
-	["channels_bg"] = function()
-	   Reported_Global_Vars.Channels.rBattleground = Reported_FlipState(Reported_Global_Vars.Channels.rBattleground, "Battleground channel monitoring");
-	end,
-	["channels_battleground"] = function() -- The same as bg
-  		Reported_Global_Vars.Channels.rBattleground = Reported_FlipState(Reported_Global_Vars.Channels.rBattleground, "Battleground channel monitoring");
-	end,
-	["channels_party"] = function()
-  		Reported_Global_Vars.Channels.rParty = Reported_FlipState(Reported_Global_Vars.Channels.rParty, "Party channel monitoring");
-	end,
-	["channels_raid"] = function()
-  		Reported_Global_Vars.Channels.rRaid = Reported_FlipState(Reported_Global_Vars.Channels.rRaid, "Raid channel monitoring");
-	end,
-	["channels_numbered"] = function()
-  		Reported_Global_Vars.Channels.rNumbered = Reported_FlipState(Reported_Global_Vars.Channels.rNumbered, "Numbered channel monitoring");
-	end,
-	["channels_numbered_channels"] = function(chan) -- A function argument!
-		if (Reported_Global_Vars.Numbered[chan] == 'On') then
-			Msg("Channel |cFFFFFF7F" .. chan .. "|r has been |cFFFFFF7Fremoved|r from the |cFFFFFF7Fnumbered channel|r list.");
-			Reported_Global_Vars.Numbered[chan] = 'Off';
-		else
-			Msg("Channel |cFFFFFF7F" .. chan .. "|r has been |cFFFFFF7Fadded|r to the |cFFFFFF7Fnumbered channel|r list.");
-			Reported_Global_Vars.Numbered[chan] = 'On';
-		end
-	end,
-	["modules"] = function()
-		local Reported_Modules_Temp = {}; -- Creates and empty table
-		for i in pairs(Reported_Modules) do -- Gets the name of each module
-			tinsert(Reported_Modules_Temp, i); -- Adds it to the empty table we just made
-		end
-		sort(Reported_Modules_Temp, function(a,b) return a<b end); -- Sorts the table we just made with all the module names alphabetically
-		Msg("|cFFFFFF7FReported Modules|r: To toggle a module type /reported |cFFFFFF7F[|rmodule_name|cFFFFFF7F]|r i.e. |cFFFFFF7F/reported gandalf|r");
-		for _,v in pairs(Reported_Modules_Temp) do -- Gets all the module names
-      		local pi = gsub(v, "_", " "); -- Removes underscore from module name, replaces with space.
-			if (Reported_Modules[v].Toggle == 'On') then -- Checks the modules toggled status, prints thusly
-				Msg(" - |cFFFFFF7F" .. pi .. " [|r|cFFFFFF00" .. Reported_Modules[v].Toggle .. "|r|cFFFFFF7F]|r: " .. Reported_Modules[v].Description);
-			else
-				Msg(" - |cFFFFFF7F" .. pi .. " [|r|cFFFF0000" .. Reported_Modules[v].Toggle .. "|r|cFFFFFF7F]|r: " .. Reported_Modules[v].Description);
-			end
-		end
-	end,
-	["modules_on"] = function()
-		Msg("All |cFFFFFF7FReported Modules|r have been turned |cFFFFFF7F[|r|cFFFFFF00on|r|cFFFFFF7F]|r.");
-		for i in pairs(Reported_Modules) do -- Goes through every module and sets their toggle setting to on.
-		    Reported_Modules[i].Toggle = 'On';
-		end
-	end,
-	["modules_off"] = function()
-  		Msg("All |cFFFFFF7FReported Modules|r have been turned |cFFFFFF7F[|r|cFFFF0000off|r|cFFFFFF7F]|r. Don't forget to enable atleast 1 module!");
-  		for i in pairs(Reported_Modules) do -- Goes through every module and sets their toggle setting to off.
-		    Reported_Modules[i].Toggle = 'Off';
-		end
-	end,
-	["modules_counters"] = function()
-		local Reported_Modules_Counters_Temp = {}; -- Creates and empty table
-		for i in pairs(Reported_Modules) do -- Gets the name of each module
-			tinsert(Reported_Modules_Counters_Temp, i); -- Adds it to the empty table we just made
-		end
-		sort(Reported_Modules_Counters_Temp, function(a,b) return a<b end);
-  		for _,v in pairs(Reported_Modules_Counters_Temp) do -- Goes through every module, prints their counter.
-        	local pi = gsub(v, "_", " "); -- Removes underscore from module name, replaces with space.
-		    Msg("|cFFFFFF7F".. pi .. "|r: " .. Reported_Modules[v].Counter);
-		end
-	end,
-	["recent"] = function()
-		local num = 0;
-		Msg("Last |cFFFFFF7F10|r reports:");
-  		for _,v in pairs(Reported_Recent) do -- Goes through every module, prints their counter.
-  			num = num + 1;
-        	Msg("#|cFFFFFF7F" .. num .. "|r " .. v);
-		end
-	end,
-	["recent_max"] = function(max)
-	    Msg("|cFFFFFF7FMax|r number of |cFFFFFF7Frecent reports|r set to |cFFFFFF7F" .. max .. "|r.");
-	    Reported_Global_Vars.maxRecent = max; -- Puts the max value into the global variable table
-	    if (#(Reported_Recent) > Reported_Global_Vars.maxRecent) then -- If there are more lines in the table than the max allows...
-			repeat -- Keep doing this line until...
-				tremove(Reported_Recent, Reported_Global_Vars.maxRecent + 1); -- Removes the line just after the max line (i.e. if the max were 10 it would deleted line 11)
-			until (#(Reported_Recent) == Reported_Global_Vars.maxRecent); -- Repeat this until the max allowed and total number of lines are equal
-		end
-	end,
-	["fakeReport"] = function(fakeChannel, fakeName, fakeNum)
-	    local ReportedLine = GetModuleLine(fakeName); -- Gets a random module line
-		SendChatMessage(ReportedLine, strupper(fakeChannel), nil, fakeNum); -- Sends message with the line that was randomly chosen
-		timer = floor(GetTime()) + 35; -- Makes it so if you fake report a real report won't go off, thus making you spam
-	end,
-	["delay"] = function(lower, upper)
-		if (lower) and (upper) then
-		    if (lower < upper) and (lower >= 0) then -- If lower is actually lower than upper and is a positive number
-		        Reported_Global_Vars.Range.Toggle = "On";
-		        Reported_Global_Vars.Range.Lower = lower;
-				Reported_Global_Vars.Range.Upper = upper;
-				rangeRand = nil;
-				Msg("Delay range is |cFFFFFF7F35|r seconds + |cFFFFFF7F" .. Reported_Global_Vars.Range.Lower .. "|r to |cFFFFFF7F" .. Reported_Global_Vars.Range.Upper .. "|r seconds.");
-            elseif (lower == upper) then -- Else if lower is the same as upper (no range)
-                rangeRand = nil;
-		    	Reported_Global_Vars.Range.Lower = lower;
-				Reported_Global_Vars.Range.Upper = lower;
-				Msg("Delay is now |cFFFFFF7F35|r seconds + |cFFFFFF7F" .. Reported_Global_Vars.Range.Lower .. "|r seconds.");
-			elseif (lower == 0 and upper == 0) then -- Else if they are both 0, then add nothing to the base delay.
-                rangeRand = nil;
-		    	Reported_Global_Vars.Range.Lower = 0;
-				Reported_Global_Vars.Range.Upper = 0;
-				Msg("Delay is now just |cFFFFFF7F35|r seconds.");
-			else
-		        Msg("You need to enter |cFFFFFF7Fvalid|r numbers! Lower must be smaller than upper, and they both must not be negative.");
-			end
-		else
-            Msg("Delay range is |cFFFFFF7F35|r seconds + |cFFFFFF7F" .. Reported_Global_Vars.Range.Lower .. "|r to |cFFFFFF7F" .. Reported_Global_Vars.Range.Upper .. "|r seconds.");
-		end
-	end,
-	["afk"] = function()
-		Reported_Global_Vars.AFKCancel = Reported_FlipState(Reported_Global_Vars.AFKCancel, "Reporting while AFK");
-	end,
-	["namefilter"] = function()
-		Reported_Global_Vars.namefilter = Reported_FlipState(Reported_Global_Vars.namefilter, "Name filtering");
-	end,
-	["test"] = function()
-	    local string = "modules on off fart banana"
-	    local captureTable = {}
-	    gsub(string, "(%a+)", function(x) print(x); table.insert(captureTable, x) end)
-	    for i,v in pairs(captureTable) do
-	        Msg(i .. " : " .. v);
-	    end
-	end
-};
-
-function TableCompare(table1, table2)	
-	for i,v in pairs(table1) do -- Adds tables from table1 to table2 if it does not already have it
-		if (type(v) == "table") then
-			if (table2[i]) then	
-				local tempTable = v;
-				TableCompare(tempTable, table2[i]);
-			else
-				table2[i] = v;
-			end
-		else
-			if not (table2[i]) then
-				table2[i] = v;
-			end
-		end
-	end
-	for i,v in pairs(table2) do -- Removes tables from table2 that no longer exist in table1
-		if (type(v) == "table") and not (table1[i]) then
-			table2[i] = nil;
-		elseif not (table1[i]) then
-			table2[i] = nil;
-		end
-	end
-	return table1, table2;	
-end
-
-function PrintTable(table)	
-	for i,v in pairs(table) do
-		if (type(v) == "table") then
-			local tempTable = v;
-			PrintTable(tempTable);
-		else
-			Msg(i .. " = " .. v);
-		end
-	end	
-end
-
-function Reported_Slash_Commands(string)
-    string = strlower(string);
-    if (string ~= "") then
-	    local slashArgs = {};
-	    gsub(string, "(%w+)", function(x) tinsert(slashArgs, x) end) 
-        if (#slashArgs == 1) and (Reported_Commands[string]) then
-            Reported_Commands[string]();
-        elseif (#slashArgs >= 2) then
-            if (slashArgs[1] == "modules") and (slashArgs[2] ~= "on") and (slashArgs[2] ~= "off") and (slashArgs[2] ~= "counters") then
-                local moduleName = slashArgs[2];         
-                for i=3, #slashArgs do
-                    moduleName = moduleName .. "_" .. slashArgs[i]; 
-                end
-                for i in pairs(Reported_Modules) do
-                    if (strlower(i) == moduleName) then
-                        if (Reported_Modules[i].Toggle == 'On') then
-                            Reported_Modules[i].Toggle = 'Off';
-                            Msg("|cFFFFFF7F" .. i .. " module|r is now |cFFFFFF7F[|r|cFFFF0000Off|r|cFFFFFF7F]|r");
-                        else
-                            Reported_Modules[i].Toggle = 'On';
-                            Msg("|cFFFFFF7F" .. i .. " module|r is now |cFFFFFF7F[|r|cFFFFFF00On|r|cFFFFFF7F]|r");
-                        end
-                    Build_Module_Table(); -- The amount of enabled modules has changed, gotta rebuild the enabled module table!
-                    break end
-                end
-            elseif (slashArgs[1] == "modules") and (slashArgs[2] == "on" or slashArgs[2] == "off" or slashArgs[2] == "counters") then
-                Reported_Commands[slashArgs[1] .. "_" .. slashArgs[2]]();
-            elseif (slashArgs[1] .. "_" .. slashArgs[2] == "channels_numbered") then
-				slashArgs[3] = tonumber(slashArgs[3]); -- Turns the string into a number
-				if (slashArgs[3] <= 10) then -- If the digit is less than 10 (max number of channels) it returns true
-					Reported_Commands.channels_numbered_channels(slashArgs[3]); -- Send the channel number to the command
-				end
-            elseif (slashArgs[1] == "channels") and (Reported_Commands[slashArgs[1] .. "_" .. slashArgs[2]]) then
-                Reported_Commands[slashArgs[1] .. "_" .. slashArgs[2]]();
-            elseif (slashArgs[1] == "recent") then
-				slashArgs[2] = tonumber(slashArgs[2]); -- Turns the string into a number
-				Reported_Commands.recent_max(slashArgs[2]); -- Send the channel number to the command
-            elseif (slashArgs[1] == "report") then
-                if (#slashArgs == 3) then
-					local fakeChannel = slashArgs[2];
-	                if (fakeChannel == "guild") or (fakeChannel == "officer") or (fakeChannel == "party") or (fakeChannel == "raid") or (fakeChannel == "say") or (fakeChannel == "yell") or (fakeChannel == "battleground") or (fakeChannel == "instance_CHAT") then -- checks if the channel arg is any of these
-						Reported_Commands.fakeReport(fakeChannel, slashArgs[3]);
-					elseif (strlen(fakeChannel) <= 2) and (fakeChannel + 0 >= 1) and (fakeChannel + 0 <= 10) then -- If it doesn't match any named channel it converts it into a number and checks to see if it's 10 or less
-						Reported_Commands.fakeReport("CHANNEL", slashArgs[3], fakeChannel);
-					end
-				else
-				    Msg("Hey, enter the right number of arguments jerk. |cFFFFFF7F/reported report [|rchannel|cFFFFFF7F] [|rname|cFFFFFF7F]|r");
-				end
-            elseif (slashArgs[1] == "delay") then
-                slashArgs[2] = tonumber(slashArgs[2]);
-                slashArgs[3] = tonumber(slashArgs[3]);
-				if (#slashArgs == 3) then
-					Reported_Commands["delay"](slashArgs[2], slashArgs[3]);
-				elseif (#slashArgs == 2) then
-       				Reported_Commands["delay"](slashArgs[2], slashArgs[2]);
-				else
-					Msg("You must enter |cFFFFFF7Fvalid|r numbers.");
-				end
-            end
-        elseif not (Reported_Commands[string]) then
-            Reported_Usage();        
-        end 
+local Reported_OnUpdate = function(self, elapsed)
+  self.current = self.current + elapsed
+  if self.duration > 0 then
+    local remaining = self.expire - self.current
+    if remaining <= 0 then
+      self:SetScript('OnUpdate', nil)
+      self.time:Hide()
+      self.progress:Hide()
     else
-        Reported_Usage();
+      self.time:SetFormattedText('%0.2f / %d', remaining, self.duration)
+      self.progress:SetWidth(ChatFrame1:GetWidth() * max(0,(remaining/self.duration)))
     end
+  end
 end
 
-function Reported_Usage()
-	Msg("|cFFFFFF7FReported|r v|cFFFFFF7F" .. Version .. "|r Addon Usage:|r");
-	if (Reported_Global_Vars.Toggle == 'On') then
-    	Msg(" - |cFFFFFF7Ftoggle [|r|cFFFFFF00On|r|cFFFFFF7F]|r: Toggles the addon on and off");
-	else
-	    Msg(" - |cFFFFFF7Ftoggle [|r|cFFFF0000Off|r|cFFFFFF7F]|r: Toggles the addon on and off");
-	end
-	if (Reported_Global_Vars.AFKCancel == 'On') then
-    	Msg(" - |cFFFFFF7Fafk [|r|cFFFFFF00On|r|cFFFFFF7F]|r: Toggles blocking the ability to report while AFK");
-	else
-	    Msg(" - |cFFFFFF7Fafk [|r|cFFFF0000Off|r|cFFFFFF7F]|r: Toggles blocking the ability to report while AFK");
-	end
-	if (Reported_Global_Vars.namefilter == 'On') then
-    	Msg(" - |cFFFFFF7Fnamefilter [|r|cFFFFFF00On|r|cFFFFFF7F]|r: Toggles filtering of server name out of player names");
-	else
-	    Msg(" - |cFFFFFF7Fnamefilter [|r|cFFFF0000Off|r|cFFFFFF7F]|r: Toggles filtering of server name out of player names");
-	end
-	Msg(" - |cFFFFFF7Fcounter [|r" .. Reported_Global_Vars.Counter .. "|cFFFFFF7F]|r: Tells you how many times this addon has been triggered (oh it's right there, heh)");
-	Msg(" - |cFFFFFF7Frange [|r" ..Reported_Global_Vars.Range.Lower .. " |cFFFFFF7Fto|r " .. Reported_Global_Vars.Range.Upper .. "|cFFFFFF7F]|r: Range of the time (in seconds) of the delay before a |cFFFFFF7FReported|r message is sent. Use |cFFFFFF7F/reported delay n1 n2|r  where |cFFFFFF7Fn1|r is the lower end of the range and |cFFFFFF7Fn2|r is the upper end of the range. Keep |cFFFFFF7Fn2|r blank for no deviation.");
-	Msg(" - |cFFFFFF7Frecent[|r" .. #(Reported_Recent) .. "/" .. Reported_Global_Vars.maxRecent.. "|cFFFFFF7F]|r: Prints last " .. Reported_Global_Vars.maxRecent .. " messages you reported, add a number after |cFFFFFF7F/reported recent|r to set max number to record");
-	Msg(" - |cFFFFFF7Freport [|rchannel|cFFFFFF7F] [|rname|cFFFFFF7F]|r: Does a fake report, ignores timer but does trigger the timer for regular reporting. Does not add to counter. Example: /reported report 2 Lordbeef, /reported report guild Poopsocks");
- 	Msg(" - |cFFFFFF7Fchannels|r: List of all channels you can make reported monitor");
-	Msg(" - |cFFFFFF7Fmodules|r: List of all modules and their toggled status");
-	Msg(" - |cFFFFFF7Fmodules on|r: Enables all modules");
-	Msg(" - |cFFFFFF7Fmodules off|r: Disables all modules");
-	Msg(" - |cFFFFFF7Fmodules counters|r: Prints counters of every module");
+-- deals with timing delayed reponses and output throttle
+-- priority value is used to safeguard against timer spam
+local Reported_Timer = function(self, duration, priority, payload)
+  if self.duration == 0 or priority > self.priority then
+    C_Timer.After(duration, function()
+      self.duration = 0
+      self.expire = 0
+      self.priority = 0
+        if payload then
+          payload()
+        end
+      end)
+    self.current = GetTime()
+    self.duration = duration
+    self.expire = self.current+ self.duration
+    self.priority = priority
+
+    self:SetScript('OnUpdate', Reported_OnUpdate)
+    self.progress:SetTexture(priority-1, 2-priority, 0, 1)
+    self.payload = payload
+    self.progress:Show()
+    self.time:Show()
+    return true
+  end
+  return false
 end
 
--- Prints the OnLoad message and sets up slash commands
-function Reported_OnLoad(self)
- 	local totalModules = 0;
-	for i in pairs(Reported_Modules_Default) do
-	    totalModules = totalModules + 1; -- Adds 1 for every module in the module table
-	end
-	Msg("|cFFFFFF7FReported|r v|cFFFFFF7F" .. Version .. "|r: Type |cFFFFFF7F/reported|r for info. |cFFFFFF7F" .. totalModules .. "|r modules loaded. Addon by |cFFFFFF7FGoon Squad Mal'Ganis|r."); -- Prints when addon is initialized
- 	self:RegisterEvent("ADDON_LOADED");
- 	self:RegisterEvent("PLAYER_FLAGS_CHANGED");
- 	SLASH_REPORTED1 = "/reported";
- 	SlashCmdList["REPORTED"] = Reported_Slash_Commands; -- Directs all slash commands to this function
+-- parses the actual chat event for dirty words
+local Reported_OnChatMsg = function(self, event, message, sender, channelName, _, target, _, _, channelNumber)
+
+  print(self, event, message, sender, channelName, _, target, _, _, channelNumber)
+  if GetTime() <= nextCheckTime then
+    return
+  end
+
+  local filteredname = sender:gsub("%-.+", "")
+  local chatType = events[event]
+  local chatID = chatType
+
+  if chatType == 'CHANNEL' then
+    if not db.channels[chatType .. channelNumber] then
+      return
+    end
+    chatID = chatID .. channelNumber
+  end
+  print(chatType, chatID, sender)
+
+  message = ' ' .. strlower(message) .. ' ' -- pad with spaces for matching full words
+  local hasSwear = false
+  local detectedWord
+  local lastWord
+  for i, cussString in ipairs(db.Dictionary) do
+
+    detectedWord = message:match(cussString)
+    lastWord = cussString
+    if detectedWord then
+      detectedWord = detectedWord:gsub("^%s+", ""):gsub("%s+$", "")
+      PlaySoundFile([[Interface\Addons\SharedMedia_MyMedia\sound\Quack.ogg]])
+      hasSwear = true
+      break
+    end
+  end
+  print('pattern check ended at "'..tostring(lastWord)..'"')
+
+  if hasSwear then
+    sender=  sender:gsub("%-.+$", "")
+    nextCheckTime = GetTime() +  db.Throttle
+    local delay = rand(db.DelayMin, db.DelayMax)
+    local message, module, line, total, session = GetReportedLine(filteredname)
+    Reported_Timer(self, delay, 1, function()
+      PlaySoundFile([[Interface\Addons\SharedMedia_MyMedia\sound\IM.ogg]])
+      SendChatMessage(message, chatType, nil, channelNumber)
+      Reported_Timer(self, db.Throttle, 2)
+    end)
+    local numReports = 1
+
+    db.modules[module] = db.modules[module] or {true, 0, 0 }
+    db.modules[module][2] = db.modules[module][2] + 1
+
+    Msg('Reporting |cFFFFFF88'.. filteredname .. '|r for "|cFFFF0000'..detectedWord..'|r" (#'..(db.modules[module][2])..') in |cFF00FFFF' .. chatID .. '|r (|cFF00FF00'..module..'|r, |cFFFFFF00'..line..'|r).')
+  end
 end
 
-function Reported_OnEvent(self, event)
-	if (event == "ADDON_LOADED") and (addonLoaded == 0) then
-		Reported_Global_Vars_Default, Reported_Global_Vars = TableCompare(Reported_Global_Vars_Default, Reported_Global_Vars);
-		Reported_Modules_Default, Reported_Modules = TableCompare(Reported_Modules_Default, Reported_Modules);
-		Build_Module_Table();  -- This is not in the OnLoad function as it would just be ignored.
-		addonLoaded = 1;
-	end
-	if (event == "PLAYER_FLAGS_CHANGED") then
-		afk = UnitIsAFK("Player");
-	end
+local colors = {
+  ['disabled']  = {.15, .15, .15, 1,
+    1, 1, 1, .05},
+  ['checkdisabled'] = {.25, .25, .25, 1,
+    1, 1, 1, .35
+  },
+  ['checked']   = {.4, .8, 1, 1,
+    0.3, .7, 1, 1},
+  ['unchecked'] = {0.1, 0.1, 0.1, 1,
+    1, 1, 1, .5},
+}
+
+local JournalButton_OnClick = function(self)
+  if db.modules[self.moduleName] then
+    if db.modules[self.moduleName][1] == true then
+      db.modules[self.moduleName][1] = false
+    else
+      db.modules[self.moduleName][1] = true
+    end
+  else
+    db.modules[self.moduleName] = { true, 0, 0 }
+  end
+  addon.UpdateEntries()
+  addon.UpdateModules()
 end
 
-function Build_Module_Table()
-	wipe(Module_Table); -- Clear the table
-	for i,v in pairs(Reported_Modules) do -- Walks through the table, getting the index and the value of said index
-  		if (Reported_Modules[i].Toggle == 'On') then
-		    tinsert(Module_Table, i); -- Turns every index name in Reported_Modules into a value in the Module_Table
-		end
-	end
+local SetPalette = function(self, checked, enabled)
 end
 
-function CheckMsg(msg, player, chatType, channel, channame) -- The most important function of this AddOn, checks messages for swear words and responds
-    -- Table of swears it will check against the message please cover your eyes
-	local swears = {
-		"faggot",
-		"faggit",
-		"fuck",
-		"nigger",
-		"nigga",
-		"cunt",
-		"bitch",
-		"bastard",
-		"douche",
-		"asshole",
-		"gook",
-		"chink",
-    "%Aasses%A",
-		"%Abutt%A",			-- This matches the word butt only
-		"%Aspic%A",			-- This matches the word spic only
-		"%Acock%A", 		-- This matches the word cock only
-		"%Adick%A",			-- This matches the word dick only
-		"%Aranga%A", 		-- This matches the word ranga only
-		"%Adang%A",			-- This matches the word dang only
-		"%Adarn%A",			-- This matches the word darn only
-		"%Afuk%A", 			-- This matches the word fuk only
-    "%Afuc%A",
-    "%Afuker%A",
-    "%Afukker%A",
-    "%Adafuq%A",
-		"%Afukk%A",			-- This matches the word fukk only
-		"%Afukc%A",			-- This matches the word fukc only
-		"%Aass%A", 			-- This matches the word ass only
-		"%Afag%A", 			-- This matches the word fag only
-		"%Ashit%A" 			-- This matches the word shit only
-	};
-	local filteredname;
-	
-	msg = msg .. " "; -- Makes matching 'shit' easier
-	for i,v in ipairs(swears) do -- For every line in the swear table do this
-		filteredname = strmatch(player, "([^%-]+)%-?.*"); -- Remove server name from player names. Thanks Lemonking;
-		if (strmatch(strlower(msg), v)) and (Reported_Global_Vars.Toggle == 'On') and (filteredname ~= UnitName("Player")) and (#(Module_Table) > 0) and not (afk and Reported_Global_Vars.AFKCancel == 'On') then -- Damn that's a lot of ands. Checks to see if 1. Reported is enabled, 2. You have atleast 1 module enabled, 3. It's not reporting yourself, 4. It's not matching with a tradeskill link.
-			if not (timer) or (GetTime() > timer) then -- Has it been 35 seconds since the last report?
-			
-				if (Reported_Global_Vars.namefilter == "On") then -- use the filter name if the toggle is on
-					player = filteredname;
-				end
-				
-				ReportedLine = GetModuleLine(player); -- Passes on the player name to put into the response line if needed
-				ReportedLine = ReportedLine .. ReportedLineSuffix; -- Appends suffix to response line
 
-				Reported_Modules[getModuleName].Counter = Reported_Modules[getModuleName].Counter + 1; -- Adds 1 to the module counter				
-				Reported_Global_Vars.Counter = Reported_Global_Vars.Counter + 1; -- Adds 1 to the total counter
-				printModuleName = gsub(getModuleName, "_", " "); -- Replace underscore with space in the module name for printing purposes
-				timer = floor(GetTime()) + 35; -- Can't 'report' someone for 35 seconds.  DO NOT CHANGE THIS
-				rResponded = 0;
-				local timestampH, timestampM = GetGameTime(); -- Timestamps for Reported_Recent
-				lastReported = player; -- These two lines are for the rRespond option
-				if (Reported_Global_Vars.Range.Upper == 0) then
-					Msg("|cFFFFFF7FReported|r #|cFFFFFF7F" .. Reported_Global_Vars.Counter .. "|r(|cFFFFFF7F" .. Reported_Modules[getModuleName].Counter .. "|r) using |cFFFFFF7F" .. printModuleName .. "|r module.");
-					SendChatMessage(ReportedLine, chatType, nil, channel); -- Sends message with the line that was randomly chosen
-				else -- If the delay is not 0 then it does other stuff than normal
-					elapsedUpdate, swearFound = 0, 1; -- Reset timer to 0
-					holdReportedInfo.ChatType = chatType; -- Preserve chatType for delay
-					holdReportedInfo.Channel = channel; -- Preserve channel for delay
-				end
-				if (channel) then -- If channel is something other than nil
-					tinsert(Reported_Recent, 1, "[" .. timestampH .. ":" .. timestampM .. "] [" .. channel .. ". " .. channame .. "] [" .. player .. "]: " .. msg); -- Insert information to the beginning of the table
-				else
-				    local tempPrefix = strmatch(chatType, "%a"); -- Takes the first letter of the variable chatType
-					local tempSuffix = strmatch(chatType, "%a*", 2); -- Takes the rest of variable chatType, but skips the first letter
-    				chatType = tempPrefix .. strlower(tempSuffix); -- Adds these two together, formatting it so the first letter is capitalized and the rest aren't
-                    tinsert(Reported_Recent, 1,"[" .. timestampH .. ":" .. timestampM .. "] [" .. chatType .. "] [" .. player .. "]: " .. msg); -- Inserts it at the top of the table
-				end
-				if (#(Reported_Recent) > Reported_Global_Vars.maxRecent) then -- If the recent table is larger than it should be
-					repeat
-						tremove(Reported_Recent, Reported_Global_Vars.maxRecent + 1); -- Removes the line in the table after what should be the last one
-					until (#(Reported_Recent) == Reported_Global_Vars.maxRecent); -- Keep doing this until the length of the table is aslong as is allowed
-				end
-			end
-		end
-	end
+local ChannelButton_OnShow = function(self)
+  local checked, enabled = self:GetChecked(), self:IsEnabled()
+  local swatch = colors.unchecked
+  if not enabled then
+    swatch = colors.disabled
+    if checked then swatch = colors.checkdisabled end
+  else
+    if checked then swatch = colors.checked end
+  end
+  local r1, b1, g1, a1, r2, b2, g2, a2 = unpack(swatch)
+  self.bg:SetTexture(r1, b1, g1, a1)
+  self.label:SetTextColor(r2, b2, g2, a2)
+end
+local ChatChannelButton_OnClick = function(self)
+  db.channels[self.chatID] = self:GetChecked()
+  ChannelButton_OnShow(self)
 end
 
-function Reported_OnUpdate(self, elapsed)
-	if (Reported_Global_Vars.Toggle == "On") and (swearFound == 1) then
-        if (rangeRand == nil) then
-		    rangeRand = math.random(Reported_Global_Vars.Range.Lower, Reported_Global_Vars.Range.Upper);
-		    Msg("|cFFFFFF7FReported|r #|cFFFFFF7F" .. Reported_Global_Vars.Counter .. "|r(|cFFFFFF7F" .. Reported_Modules[getModuleName].Counter .. "|r) using |cFFFFFF7F" .. printModuleName .. "|r module. Delaying by |cFFFFFF7F" .. rangeRand .. "|r seconds.");
-		elseif (Reported_Global_Vars.Range.Lower ~= Reported_Global_Vars.Range.Upper) then
-			if (elapsedUpdate < rangeRand) then
-			    elapsedUpdate = elapsedUpdate + elapsed;
-			else
-			    swearFound = 0; 
-				SendChatMessage(ReportedLine, holdReportedInfo.ChatType, nil, holdReportedInfo.Channel); -- Sends message with the line that was randomly chosen
-				wipe(holdReportedInfo); -- Clean up the table
-			end
-		else
-			if (elapsedUpdate < Reported_Global_Vars.Range.Lower) then
-		    	elapsedUpdate = elapsedUpdate + elapsed;
-			else
-				swearFound = 0;
-				SendChatMessage(ReportedLine, holdReportedInfo.ChatType, nil, holdReportedInfo.Channel); -- Sends message with the line that was randomly chosen
-				wipe(holdReportedInfo); -- Clean up the table
-			end
-		end
-	end
+local ChatButton_OnClick = function(self, value)
+  local value = self:GetChecked()
+  if self.chatType == 'CHANNEL' then
+    -- chat channel buttons
+    for i = 1, 10 do
+      if value == true then
+        self.numbers[i]:Enable()
+      else
+        self.numbers[i]:Disable()
+      end
+      ChannelButton_OnShow(self.numbers[i])
+    end
+  end
+  db.channels[self.chatType] = value
+  ChannelButton_OnShow(self)
 end
 
-local Reported_frame = CreateFrame("Frame"); -- Create frame to get all the events registered below
-	Reported_frame:RegisterEvent("CHAT_MSG_SAY"); -- Without registering these chat events, these channels would not be monitored at all for swear words
-	Reported_frame:RegisterEvent("CHAT_MSG_YELL");
-	Reported_frame:RegisterEvent("CHAT_MSG_GUILD");
-	Reported_frame:RegisterEvent("CHAT_MSG_OFFICER");
-	Reported_frame:RegisterEvent("CHAT_MSG_PARTY");
-	Reported_frame:RegisterEvent("CHAT_MSG_RAID");
-	Reported_frame:RegisterEvent("CHAT_MSG_CHANNEL");
-	Reported_frame:RegisterEvent("CHAT_MSG_INSTANCE_CHAT");
-	Reported_frame:RegisterEvent("CHAT_MSG_INSTANCE_CHAT_LEADER");
-	Reported_frame:RegisterEvent("CHAT_MSG_BATTLEGROUND");
-	Reported_frame:RegisterEvent("CHAT_MSG_WHISPER");
-	Reported_frame:RegisterEvent("CHAT_MSG_BATTLEGROUND_LEADER");
-	Reported_frame:RegisterEvent("CHAT_MSG_RAID_LEADER");
-	Reported_frame:RegisterEvent("CHAT_MSG_PARTY_LEADER");
-	Reported_frame:SetScript("OnEvent", function (self, event, msg, player, _, _, _, _, _, channel, channame)
-	event = gsub(event, "_LEADER", ""); -- Removes the _LEADER from PARTY_LEADER so you can report them
-	if (event == "CHAT_MSG_SAY" and Reported_Global_Vars.Channels.rSay == 'On') or (event == "CHAT_MSG_YELL" and Reported_Global_Vars.Channels.rYell == 'On') or (event == "CHAT_MSG_GUILD" and Reported_Global_Vars.Channels.rGuild == 'On') or (event == "CHAT_MSG_OFFICER" and Reported_Global_Vars.Channels.rOfficer == 'On') or (event == "CHAT_MSG_PARTY" and Reported_Global_Vars.Channels.rParty == 'On') or (event == "CHAT_MSG_RAID" and Reported_Global_Vars.Channels.rRaid == 'On') or (event == "CHAT_MSG_INSTANCE_CHAT" and  Reported_Global_Vars.Channels.rInstance_CHAT == 'On') or (event == "CHAT_MSG_BATTLEGROUND" and Reported_Global_Vars.Channels.rBattleground == 'On') then
-  		event = gsub(event, "CHAT_MSG_", ""); -- Removes the first two parts of the event, leaving the channel it was said in
-		msg = gsub(msg, "%[.+%](%|h)", ""); -- This funky thing removes any thing that you would see in brackets such as item, achievement, spell, and tradeskill links
-		CheckMsg(msg, player, event); -- Send info to function
-	elseif (event == "CHAT_MSG_CHANNEL") and (Reported_Global_Vars.Channels.rNumbered == 'On') then
-		for i,v in pairs(Reported_Global_Vars.Numbered) do
-			if (i == channel) and (v == 'On') then
-				msg = gsub(msg, "%[.+%](%|h)", ""); -- This funky thing removes any thing that you would see in brackets such as item, achievement, spell, and tradeskill links
-				CheckMsg(msg, player, "CHANNEL", channel, channame); -- Send info to function
-			end
-		end
-	elseif (event == "CHAT_MSG_WHISPER") and (Reported_Global_Vars.Channels.rRespond == 'On') and (rResponded == 0) and (player == lastReported) then -- If the message is in a whisper, rRespond is enabled, it has not responded to the person before, and the person is the last person to be reported then
-		rResponded = 1; -- Makes it so this is only set once to the person
-		SendChatMessage("hey man...just stop cussing, and vot republican. peace", "WHISPER", nil, player); -- palin/bachmann 2012
-	end
-end);	
+-- organized into tables of ['FrameScript type']['widget key']
+local OnClick = {}
+local OnValueChanged = {}
+local OnEnterPressed = {}
+local OnEscapePressed = {}
+OnEnterPressed.Dictionary = function(self)
+  local wordlist = {}
+  local words = self:GetText()
+  local position = 0
+  local n = 1
+  local offset = word:find('\n')
+  repeat
+    local cussword = words:sub(position, offset)
+    cussword = cussword:gsub('*', '[%s*]'):gsub('|end', '%A'):gsub('start|', '%A')
+    cussword = cussword:gsub('^%s+', ''):gsub('%s+$', '')
+    print('  saving cussword pattern:', cussword)
+    tinsert(wordlist, cusswords)
+
+    position = offset+1
+    offset = word:find('\n', position)
+  until offset >= #words
+
+
+end
+OnEscapePressed.LineSuffix = function(self)
+
+end
+
+OnValueChanged.DelayMin = function(self)
+  if self:GetValue() > Reported.DelayMax:GetValue() then
+    Reported.DelayMax:SetValue(self:GetValue())
+  end
+  db.DelayMin = self:GetValue()
+  self.label:SetFormattedText("%0.1f", self:GetValue())
+end
+OnValueChanged.DelayMax = function(self)
+  if self:GetValue() < Reported.DelayMin:GetValue() then
+    Reported.DelayMin:SetValue(self:GetValue())
+  end
+  db.DelayMax = self:GetValue()
+  print('DelayMax', db.DelayMax)
+  self.label:SetFormattedText("%0.1f", self:GetValue())
+end
+OnValueChanged.Throttle = function(self)
+  db.Throttle = floor(self:GetValue()+.5)
+  self.label:SetFormattedText("%d", db.Throttle)
+end
+
+OnClick.EnableState = function(self)
+  db.EnableState = self:GetChecked()
+  Reported.enabled = db.EnableState
+  addon.UpdateEnableState()
+end
+OnClick.NoAFK = function(self)
+  db.NoAFK = self:GetChecked()
+  addon:PlayerFlagsChanged()
+end
+OnClick.TestButton = function(self)
+  local text, module, line,  enabled, total, session = GetReportedLine(playerName)
+  Msg('Test:\n'.. text .. '\n(|cFF00FF00'.. module..'|r. |cFFFFFF00' .. line .. '|r).')
+end
+OnClick.CloseButton = function()
+  Reported.fadeOut:Play()
+end
+
+---- These are all prompted by user action and therefore have to be accessible to one another
+-- chat command
+addon.Command = function(input)
+  if input:match("%a+") then
+    Msg("|cFFFFFF00Reported|r usage: /reported")
+    return
+  end
+
+  if Reported:IsVisible() then
+    Reported.fadeOut:Play()
+    db.DialogState = false
+  else
+    Reported.fadeIn:Play()
+    db.DialogState = true
+  end
+end
+
+-- module selection
+local entryHeight, entryWidth
+addon.UpdateEntries = function()
+
+  -- reset the module journal
+  wipe(addon.orderedModules)
+  sort(addon.orderedNames, addon.ModuleSort)
+  for i, v in ipairs(addon.orderedNames) do
+    addon.orderedModules[i] = addon.moduleText[v]
+  end
+
+  Reported.entries = Reported.entries or {}
+  local last= Reported.entryListHeader
+
+  if not Reported.entries[1] then
+    -- create a dummy entry so we can get measurements
+    Reported.entries[1] = CreateFrame('Button', 'ReportedModuleEntry1', Reported, 'ReportedModuleentry')
+    Reported.entries[1].text:SetText('bar')
+    entryHeight = Reported.entries[1].text:GetStringHeight() + 6
+    entryWidth = Reported.entryList:GetWidth()
+    fauxScrollEntries = floor((Reported.entryList:GetHeight() - Reported.entryListHeader:GetHeight()) / entryHeight)
+  end
+
+  for i = 1, fauxScrollEntries do
+    Reported.entries[i] = Reported.entries[i] or CreateFrame('Button', 'ReportedModuleEntry'..i, Reported, 'ReportedModuleentry')
+    local entry = Reported.entries[i]
+    local index = i + fauxScrollOffset
+
+    entry.moduleName = orderedNames[index]
+    entry.text:SetText('|cFF66DDFF' .. orderedNames[index].. '|r - ' .. (orderedModules[index].Description or "") .. (orderedModules[index].Credit and (' |cFFFFFF00by '.. orderedModules[index].Credit) or ""))
+    entry:SetSize(entryWidth, entryHeight)
+    entry:SetPoint('TOPLEFT', last, 'BOTTOMLEFT', 0, 0)
+    entry:SetScript('OnClick', JournalButton_OnClick)
+
+    local numModules, numLines = 0, 0
+    if db.modules[orderedNames[index]] and db.modules[orderedNames[index]][1] then
+      entry.bg:SetTexture(.2,0.4,.2, 1)
+      numModules= numModules + 1
+      numLines = numLines + #moduleText[orderedNames[index]]
+    else
+      entry.bg:SetTexture(.2, .2, .2, 1)
+    end
+    last = entry
+  end
+end
+
+-- used to sort module list with selected modules placed at the top
+addon.ModuleSort = function(a,b)
+  if db.modules[a] and (db.modules[a][1] == true) then
+    if db.modules[b] and (db.modules[b][1] == true) then
+      --print('and(', a, ',', b') = true, but a < b =', (a < b))
+      return a < b
+    else
+      --print('and(', a, ' true,', b,' false) = true')
+      return true
+    end
+  elseif db.modules[b] and (db.modules[b][1] == true) then
+    --print(a, 'false', b, 'true, so false')
+    return false
+  else
+    return a < b
+  end
+end
+
+-- player login/zoning
+addon.Initialize = function()
+  -- shortcuts
+  enabledModules = addon.enabledModules
+  swears = addon.dictionary
+
+
+  -- player info
+  myGUID = UnitGUID('player')
+  playerName = UnitName('player')
+
+  -- fetch savedvars
+  _G.ReportedDB = _G.ReportedDB or {}
+  db = _G.ReportedDB
+  for k,v in pairs(defaults) do
+    if db[k] == nil then
+      db[k] = v
+    end
+
+    if type(v) == 'table' then
+      for kk, vv in pairs(defaults[k]) do
+        if db[k][kk] == nil then
+          db[k][kk] = vv
+        end
+      end
+    end
+  end
+
+  if versionString > (db.versionString or 0) then
+    db.versionString = versionString
+    db = defaults
+    Msg('Saved options were reset for a recent update. This message will self-destruct.')
+  elseif dictionaryVersion > (db.dictionaryVersion or 0) then
+    _G.ReportedDB.Dictionary = defaults.Dictionary
+    db.dictionaryVersion = dictionaryVersion
+    Msg('Dictionary was reset for a recent update. This message will self-destruct.')
+  end
+
+
+
+  -- resolve watched channels
+  for chatID, monitor in pairs(monitors) do
+    --print('watching', monitor.label)
+    monitor.enable = db.channels[chatID] and db.channels[chatID] or false
+  end
+
+  addon.UpdateModules()
+  Reported:UnregisterEvent('ADDON_LOADED')
+  Reported:RegisterUnitEvent('PLAYER_FLAGS_CHANGED', 'player')
+  addon.UpdateEnableState(true)
+
+  if db.dialog == true and not Reported:IsVisible() then
+    Reported.fadeIn:Play()
+  end
+
+end
+
+addon.UpdateModules = function()
+  -- compile stats
+  local moduleLines = 0
+  wipe(addon.orderedNames)
+  wipe(addon.enabledModules)
+  for name, module in pairs(addon.moduleText) do
+    local i = #addon.orderedNames+1
+    addon.orderedNames[i] = name
+
+    if db.modules[name] then
+      local enabled, totalReports = unpack(db.modules[name])
+      db.modules[name][3] = 0
+      if enabled then
+        local newindex = #addon.enabledModules + 1
+        --print('|cFFFF0088'..newindex..'|r', name)
+        addon.enabledModules[newindex] = name
+        moduleText[name].index = newindex
+        moduleLines = moduleLines + #moduleText[name]
+      end
+    end
+  end
+  local numModules = #addon.enabledModules
+  local modulesString = tostring(numModules) .. ' module'..((numModules ~= 1) and 's' or '')..', '.. tostring(moduleLines).. ' lines'
+  Reported.stats:SetText(modulesString)
+end
+
+-- addon function is toggled
+addon.UpdateEnableState = function(quiet)
+  if Reported.enabled == false then
+    Reported:UnregisterAllEvents()
+    if not quiet then
+      if db.EnableState == false then
+        Msg("|cFFFFFF00Reported|r toggled |cFFFF0000Off|r.")
+      else
+        Msg("|cFFFFFF00Reported|r standing by.")
+      end
+    end
+  else
+    for event, chatID in pairs(events) do
+      Reported:RegisterEvent(event)
+    end
+    if not quiet then Msg("|cFFFFFF00Reported|r toggled |cFF00FF00On|r.") end
+  end
+end
+
+-- player's AFK state changed
+addon.PlayerFlagsChanged = function()
+  local enabled = Reported.enabled
+  if UnitIsAFK('player') and db.NoAFK then
+    if Reported:IsVisible() then
+      Reported.playerFlag:Show()
+      Reported.playerFlag:SetText('AFK')
+    end
+    Reported.enabled = false
+  else
+    if Reported:IsVisible() then
+      Reported.playerFlag:Hide()
+    end
+    Reported.enabled = db.EnableState
+  end
+  if enabled ~= Reported.enabled then
+    addon.UpdateEnableState()
+  end
+end
+
+---- Defined in global space for simplicity; they are only looked up once so it's probably okay
+
+-- journal scrollwheel activity
+ReportedGSH_OnScroll = function(self, delta)
+  if delta < 0 then
+    fauxScrollOffset = fauxScrollOffset + 5
+    if (fauxScrollOffset + fauxScrollEntries) >= #addon.orderedModules then
+      fauxScrollOffset = #addon.orderedModules - fauxScrollEntries
+    end
+  else
+    fauxScrollOffset = fauxScrollOffset - 5
+    if fauxScrollOffset <= 0 then
+      fauxScrollOffset = 0
+    end
+  end
+  addon.UpdateEntries(self)
+end
+
+-- any time the /reported UI is opened
+ReportedGSH_OnShow = function(self)
+  local last = self
+  local anchor, point, x, y = 'TOPRIGHT', 'TOPLEFT', 0, 0
+  self:EnableMouse(true)
+  self:EnableMouseWheel(true)
+  self.channels = self.channels or {}
+  for index, chatType in ipairs(monitors_order) do
+    local monitor = monitors[chatType]
+    self.channels[index] = self.channels[index] or CreateFrame('CheckButton', 'Reported'.. chatType..'Button', self, 'ReportedCheckButton')
+    local button = self.channels[index]
+
+    button.label:SetText(monitor.label)
+    button:SetPoint(anchor, last, point, x, y)
+    button:SetChecked(db.channels[chatType])
+    button:SetID(index)
+    button.chatType = chatType
+    last = button
+    anchor, point, x, y = 'TOPLEFT', 'BOTTOMLEFT', 0, -1
+
+    if chatType == 'CHANNEL' then
+      channelToggleButton = button
+
+      button.numbers = button.numbers or {}
+      local lastChannel = last
+      for channel = 1, 10 do
+        local from, target, to, x, y
+        if channel == 1 then
+          from, target, to, x, y= 'TOPLEFT', lastChannel, 'TOPRIGHT', 6 , 0
+        else
+
+          from, target, to, x, y= 'TOPLEFT', lastChannel, 'TOPRIGHT', 1, 0
+        end
+
+        local chatID = 'CHANNEL' .. channel
+        button.numbers[channel] = button.numbers[channel] or CreateFrame('CheckButton', 'Reported'.. chatID..'Button', self, 'ReportedChannelCheckButton')
+        local channelButton = button.numbers[channel]
+
+        channelButton:SetID(channel)
+        channelButton.chatType = chatType
+        channelButton.chatID = chatID
+        channelButton:SetChecked(db.channels[chatID])
+        channelButton.label:SetText(channel)
+        channelButton.label:ClearAllPoints()
+        channelButton.label:SetPoint('CENTER')
+        channelButton:SetPoint(from, target, to, x, y)
+        channelButton:SetChecked(db.channels[chatID])
+        lastChannel = channelButton
+        channelButton:SetScript('OnClick', ChatChannelButton_OnClick)
+        ChannelButton_OnShow(channelButton)
+      end
+    end
+    button:SetScript('OnClick', ChatButton_OnClick)
+    ChannelButton_OnShow(button)
+  end
+
+  addon.UpdateEntries(self)
+
+  for name, func in pairs(OnClick) do
+    if self[name] then
+      print('identified region |cFFFF0088', name)
+      local region = self[name]
+      if region.SetChecked and db[name] then
+        region:SetChecked(db[name])
+      end
+      --func(region)
+      region:SetScript('OnClick', func)
+    end
+  end
+  for name, func in pairs(OnValueChanged) do
+    if self[name] then
+      local region = self[name]
+      if region.SetValue and db[name] then
+        region:SetValue(db[name])
+      end
+
+      func(region)
+      region:SetScript('OnValueChanged', func)
+    end
+  end
+
+  for name, func in pairs(OnEnterPressed) do
+    if self[name] and self[name].SetText then
+      local text = table.concat(db[name] or {},'\n') or ""
+      text = text:gsub('%%s%*', '%*')
+      text = text:gsub('%%A', '%"')
+      self[name]:SetText(text)
+    end
+    self[name]:SetScript('OnEnterPressed', func)
+  end
+
+  db.dialog = true
+end
+
+-- any time the /reported UI is closed
+ReportedGSH_OnHide = function(self)
+  self:EnableMouse(false)
+  self:EnableMouseWheel(false)
+  db.dialog = false
+end
+
+-- sets the slash command and ensures that shortcut variables point to their things
+ReportedGSH_OnLoad = function(self)
+  Reported = self
+  self.duration, self.expire, self.priority = 0, 0, 0 -- prime the throttle timer
+  self:RegisterEvent('ADDON_LOADED')
+  self:RegisterForDrag('LeftButton')
+  self.Dictionary = self.DictionaryScroll.Dictionary
+  _G.SLASH_REPORTED1 = "/reported"
+  _G.SlashCmdList['REPORTED'] = addon.Command
+end
+
+ReportedGSH_OnEvent = function(self, event, ...)
+  if event == 'ADDON_LOADED' then
+    if select(1,...)  == 'Reported' then
+      addon.Initialize()
+      addon.PlayerFlagsChanged()
+    end
+  elseif event == 'PLAYER_FLAGS_CHANGED'  then
+    addon.PlayerFlagsChanged()
+  elseif events[event] then
+    local guid = select(12,...)
+    print('|cFF00FF00', event, guid)
+    if guid and guid ~= myGUID then
+      if events[event] and db.channels[events[event]] then
+        Reported_OnChatMsg(self, event, ...)
+      end
+    end
+  end
+end

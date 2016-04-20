@@ -1,9 +1,8 @@
 ## Interface: 60200
 ## Title: Reported
-## Notes: Made by Sneep & Goon Squad Mal'Ganis
-## Author: Sneep, updated by Kjerring
-## Version: 4.0.9
+## Notes: Originally made by weasel, changed a bunch by Sneep, and then updated in 2013 by Kjerring. Re-written from scratch by Krakyn/|cFF00FF00Goon Squad Mal'Ganis|r.
+## Author: Krakyn
+## Version: 6.2.4
 ## SavedVariables: ReportedDB
-
 
 Reported.xml
